@@ -93,7 +93,7 @@ export default function LibraChart({ entries }: { entries: Entry[] }) {
             borderWidth: 0.5,
             padding: 12,
             titleFont: { family: "'DM Mono', monospace", size: 11 },
-            bodyFont: { family: "'DM Mono', monospace", size: 12, weight: "500" },
+            bodyFont: { family: "'DM Mono', monospace", size: 12, weight: 500 },
           },
         },
         scales: {
