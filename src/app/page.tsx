@@ -2,18 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { addEntry, deleteEntry, subscribeToEntries, type Entry } from "@/lib/firebase";
-import LibraChart from "@/components/LibraChart";
-import { format } from "date-fns";
+import LibraChart, { moodColor } from "@/components/LibraChart";
+import { format, startOfWeek } from "date-fns";
 import styles from "./page.module.css";
-
-function moodColor(v: number): string {
-  if (v >= 7) return "#1D9E75";
-  if (v >= 3) return "#639922";
-  if (v >= 0) return "#BA7517";
-  if (v >= -3) return "#D85A30";
-  if (v >= -7) return "#D4537E";
-  return "#A32D2D";
-}
 
 function fmt(v: number): string {
   return (v > 0 ? "+" : "") + v;
@@ -25,6 +16,7 @@ export default function Home() {
   const [note, setNote] = useState("");
   const [logging, setLogging] = useState(false);
   const [logged, setLogged] = useState(false);
+  const [lifeView, setLifeView] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeToEntries(setEntries);
@@ -52,10 +44,8 @@ export default function Home() {
   const sorted = [...entries].sort((a, b) => a.ts - b.ts);
   const last = sorted[sorted.length - 1];
 
-  const startOfWeek = new Date();
-  startOfWeek.setHours(0, 0, 0, 0);
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  const weekEntries = entries.filter(e => e.ts >= startOfWeek.getTime());
+  const weekStart = startOfWeek(new Date()).getTime();
+  const weekEntries = entries.filter((e) => e.ts >= weekStart);
 
   const avg =
     weekEntries.length > 0
@@ -66,40 +56,31 @@ export default function Home() {
       ? weekEntries.reduce((m, e) => Math.abs(e.value) > Math.abs(m.value) ? e : m, weekEntries[0])
       : null;
 
+  const chartEntries = lifeView ? sorted : sorted.filter((e) => e.ts >= weekStart);
+
   return (
     <main className={styles.main}>
-      {/* Header */}
       <header className={styles.header}>
         <h1 className={styles.title}>libra</h1>
-        <span className={styles.subtitle}>rajanya's life log</span>
+        <span className={styles.subtitle}>rajanya&apos;s life log</span>
       </header>
 
-      {/* Stats */}
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
           <div className={styles.statLabel}>now</div>
-          <div
-            className={styles.statVal}
-            style={{ color: last ? moodColor(last.value) : "var(--text-tertiary)" }}
-          >
+          <div className={styles.statVal} style={{ color: last ? moodColor(last.value) : "var(--text-tertiary)" }}>
             {last ? fmt(last.value) : "—"}
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>avg</div>
-          <div
-            className={styles.statVal}
-            style={{ color: avg !== null ? moodColor(avg) : "var(--text-tertiary)" }}
-          >
+          <div className={styles.statLabel}>avg this week</div>
+          <div className={styles.statVal} style={{ color: avg !== null ? moodColor(avg) : "var(--text-tertiary)" }}>
             {avg !== null ? fmt(avg) : "—"}
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>peak</div>
-          <div
-            className={styles.statVal}
-            style={{ color: peak ? moodColor(peak.value) : "var(--text-tertiary)" }}
-          >
+          <div className={styles.statLabel}>peak this week</div>
+          <div className={styles.statVal} style={{ color: peak ? moodColor(peak.value) : "var(--text-tertiary)" }}>
             {peak ? fmt(peak.value) : "—"}
           </div>
         </div>
@@ -109,12 +90,21 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Chart */}
       <section className={styles.chartSection}>
-        <LibraChart entries={sorted} />
+        <div className={styles.chartHeader}>
+          <span className={styles.sectionLabel}>
+            {lifeView ? "life graph" : "this week"}
+          </span>
+          <button
+            className={styles.viewToggle}
+            onClick={() => setLifeView((v) => !v)}
+          >
+            {lifeView ? "this week" : "life graph"}
+          </button>
+        </div>
+        <LibraChart entries={chartEntries} lifeView={lifeView} />
       </section>
 
-      {/* Entry panel */}
       <section className={styles.entryPanel}>
         <div className={styles.sliderRow}>
           <span className={styles.sliderEdge}>−10</span>
@@ -127,10 +117,7 @@ export default function Home() {
             onChange={(e) => setSliderVal(parseInt(e.target.value))}
           />
           <span className={styles.sliderEdge}>+10</span>
-          <span
-            className={styles.sliderValue}
-            style={{ color: moodColor(sliderVal) }}
-          >
+          <span className={styles.sliderValue} style={{ color: moodColor(sliderVal) }}>
             {fmt(sliderVal)}
           </span>
         </div>
@@ -143,16 +130,11 @@ export default function Home() {
           rows={2}
         />
 
-        <button
-          className={styles.logBtn}
-          onClick={handleLog}
-          disabled={logging}
-        >
-          {logged ? "logged ✓" : logging ? "logging..." : "log it twin"}
+        <button className={styles.logBtn} onClick={handleLog} disabled={logging}>
+          {logged ? "logged ✓" : logging ? "logging..." : "log this moment"}
         </button>
       </section>
 
-      {/* Entry list */}
       <section className={styles.logSection}>
         <div className={styles.sectionLabel}>log</div>
         {entries.length === 0 ? (
@@ -168,18 +150,11 @@ export default function Home() {
                   <span className={styles.entryTime}>
                     {format(new Date(e.ts), "MMM d, h:mma")}
                   </span>
-                  <span
-                    className={styles.entryVal}
-                    style={{ color: moodColor(e.value) }}
-                  >
+                  <span className={styles.entryVal} style={{ color: moodColor(e.value) }}>
                     {fmt(e.value)}
                   </span>
                   <span className={styles.entryNote}>{e.note}</span>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(e.id)}
-                    aria-label="delete"
-                  >
+                  <button className={styles.deleteBtn} onClick={() => handleDelete(e.id)} aria-label="delete">
                     ×
                   </button>
                 </li>

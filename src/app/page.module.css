@@ -227,3 +227,28 @@
     font-size: 10px;
   }
 }
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.viewToggle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: 0.5px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.viewToggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
