@@ -48,8 +48,8 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
     const labels = data.map((e) => format(new Date(e.ts), "MMM d, h:mma"));
     const values = data.map((e) => e.value);
 
-    const minWidth = wrapperRef.current.clientWidth;
-    const scrollWidth = Math.max(minWidth, data.length * 64);
+    const containerWidth = wrapperRef.current.clientWidth;
+    const scrollWidth = lifeView ? containerWidth : Math.max(containerWidth, data.length * 64);
     canvasRef.current.style.width = scrollWidth + "px";
     canvasRef.current.width = scrollWidth;
 
@@ -74,9 +74,9 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
             borderColor: "rgba(136,135,128,0.3)",
             borderWidth: 1.5,
             pointBackgroundColor: values.map(moodColor),
-            pointBorderColor: "transparent",
-            pointRadius: values.map((_, i) => i === values.length - 1 ? 4 : 2.5),
-            pointHoverRadius: 5,
+            pointBorderColor: values.map((_, i) => i === values.length - 1 ? "transparent" : "transparent"),
+            pointRadius: values.map((_, i) => i === values.length - 1 ? 4 : 7),
+            pointHoverRadius: 8,
             tension: 0.42,
             fill: {
               target: { value: 0 },
