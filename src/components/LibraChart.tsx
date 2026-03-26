@@ -25,62 +25,31 @@ export function moodColor(v: number): string {
   return "#A32D2D";
 }
 
-const glowPlugin = {
-  id: "glowDots",
-  afterDatasetsDraw(chart: Chart) {
-    const ctx = chart.ctx;
-    const dataset = chart.data.datasets[0] as any;
-    const meta = chart.getDatasetMeta(0);
-    const values = dataset.data as number[];
-
-    meta.data.forEach((point, i) => {
-      const color = moodColor(values[i]);
-      const { x, y } = point.getProps(["x", "y"], true);
-      const isLast = i === values.length - 1;
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x, y, isLast ? 10 : 7, 0, Math.PI * 2);
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, isLast ? 10 : 7);
-      grad.addColorStop(0, color + "55");
-      grad.addColorStop(1, color + "00");
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x, y, isLast ? 4 : 3, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = isLast ? 12 : 6;
-      ctx.fill();
-      ctx.restore();
-    });
-  },
-};
-
-Chart.register(glowPlugin);
-
 interface LibraChartProps {
   entries: Entry[];
   lifeView: boolean;
+  allEntries: Entry[];
 }
 
-export default function LibraChart({ entries, lifeView }: LibraChartProps) {
+export default function LibraChart({ entries, lifeView, allEntries }: LibraChartProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
+  const animRef = useRef<number>(0);
+  const pulseRef = useRef<number>(0);
 
   useEffect(() => {
     if (!canvasRef.current || !wrapperRef.current) return;
 
-    const sorted = [...entries].sort((a, b) => a.ts - b.ts);
-    const labels = sorted.map((e) => format(new Date(e.ts), "MMM d, h:mma"));
-    const values = sorted.map((e) => e.value);
+    const data = lifeView
+      ? [...allEntries].sort((a, b) => a.ts - b.ts)
+      : [...entries].sort((a, b) => a.ts - b.ts);
+
+    const labels = data.map((e) => format(new Date(e.ts), "MMM d, h:mma"));
+    const values = data.map((e) => e.value);
 
     const minWidth = wrapperRef.current.clientWidth;
-    const scrollWidth = Math.max(minWidth, sorted.length * 60);
+    const scrollWidth = Math.max(minWidth, data.length * 64);
     canvasRef.current.style.width = scrollWidth + "px";
     canvasRef.current.width = scrollWidth;
 
@@ -88,8 +57,10 @@ export default function LibraChart({ entries, lifeView }: LibraChartProps) {
       chartRef.current.data.labels = labels;
       chartRef.current.data.datasets[0].data = values;
       chartRef.current.resize(scrollWidth, 280);
-      chartRef.current.update();
-      wrapperRef.current.scrollLeft = wrapperRef.current.scrollWidth;
+      chartRef.current.update("none");
+      setTimeout(() => {
+        wrapperRef.current!.scrollLeft = wrapperRef.current!.scrollWidth;
+      }, 50);
       return;
     }
 
@@ -100,17 +71,17 @@ export default function LibraChart({ entries, lifeView }: LibraChartProps) {
         datasets: [
           {
             data: values,
-            borderColor: "rgba(136,135,128,0.25)",
-            borderWidth: 1,
-            pointBackgroundColor: "transparent",
+            borderColor: "rgba(136,135,128,0.3)",
+            borderWidth: 1.5,
+            pointBackgroundColor: values.map(moodColor),
             pointBorderColor: "transparent",
-            pointRadius: 0,
-            pointHoverRadius: 0,
+            pointRadius: values.map((_, i) => i === values.length - 1 ? 4 : 2.5),
+            pointHoverRadius: 5,
             tension: 0.42,
             fill: {
               target: { value: 0 },
-              above: "rgba(29,158,117,0.06)",
-              below: "rgba(212,83,126,0.06)",
+              above: "rgba(29,158,117,0.07)",
+              below: "rgba(212,83,126,0.07)",
             },
           } as any,
         ],
@@ -125,7 +96,7 @@ export default function LibraChart({ entries, lifeView }: LibraChartProps) {
             callbacks: {
               title: (items) => labels[items[0].dataIndex],
               label: (item) => {
-                const e = sorted[item.dataIndex];
+                const e = data[item.dataIndex];
                 const v = e.value;
                 const prefix = v > 0 ? "+" : "";
                 return e.note ? `${prefix}${v}  ·  ${e.note}` : `${prefix}${v}`;
@@ -167,7 +138,7 @@ export default function LibraChart({ entries, lifeView }: LibraChartProps) {
               font: { family: "'DM Mono', monospace", size: 10 },
               maxRotation: 30,
               autoSkip: true,
-              maxTicksLimit: lifeView ? 12 : 8,
+              maxTicksLimit: lifeView ? 14 : 8,
             },
             border: { display: false },
           },
@@ -175,15 +146,52 @@ export default function LibraChart({ entries, lifeView }: LibraChartProps) {
       },
     });
 
-    wrapperRef.current.scrollLeft = wrapperRef.current.scrollWidth;
+    setTimeout(() => {
+      wrapperRef.current!.scrollLeft = wrapperRef.current!.scrollWidth;
+    }, 50);
+
+    // pulse ring animation on latest dot
+    const animate = () => {
+      pulseRef.current = (pulseRef.current + 0.03) % 1;
+      const chart = chartRef.current;
+      if (!chart || !canvasRef.current) return;
+
+      const meta = chart.getDatasetMeta(0);
+      const lastPoint = meta.data[meta.data.length - 1];
+      if (!lastPoint) { animRef.current = requestAnimationFrame(animate); return; }
+
+      const { x, y } = lastPoint.getProps(["x", "y"], true);
+      const lastVal = (chart.data.datasets[0].data as number[])[meta.data.length - 1];
+      const color = moodColor(lastVal);
+
+      chart.draw();
+
+      const ctx = chart.ctx;
+      const radius = 6 + pulseRef.current * 14;
+      const alpha = (1 - pulseRef.current) * 0.6;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    animRef.current = requestAnimationFrame(animate);
 
     return () => {
+      cancelAnimationFrame(animRef.current);
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [entries, lifeView]);
+  }, [entries, allEntries, lifeView]);
 
-  if (entries.length === 0) {
+  if (allEntries.length === 0) {
     return (
       <div style={{
         height: 280,

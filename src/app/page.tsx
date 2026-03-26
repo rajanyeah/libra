@@ -102,7 +102,7 @@ export default function Home() {
             {lifeView ? "this week" : "life graph"}
           </button>
         </div>
-        <LibraChart entries={chartEntries} lifeView={lifeView} />
+        <LibraChart entries={chartEntries} lifeView={lifeView} allEntries={sorted} />
       </section>
 
       <section className={styles.entryPanel}>
