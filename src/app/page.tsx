@@ -127,7 +127,7 @@ export default function Home() {
       <main className={styles.main}>
         <div className={styles.centered}>
           <h1 className={styles.title} style={{ marginBottom: "0.5rem" }}>libra</h1>
-          <p className={styles.subtitle} style={{ marginBottom: "2rem" }}>what should we call you?</p>
+          <p className={styles.subtitle} style={{ marginBottom: "2rem" }}>what should i call you?</p>
           <input
             className={styles.nameInput}
             placeholder="your name"
@@ -207,7 +207,7 @@ export default function Home() {
           rows={2}
         />
         <button className={styles.logBtn} onClick={handleLog} disabled={logging}>
-          {logged ? "logged ✓" : logging ? "logging..." : "log this moment"}
+          {logged ? "logged ✓" : logging ? "logging..." : "log it twin"}
         </button>
       </section>
 
