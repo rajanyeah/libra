@@ -75,8 +75,8 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
             borderWidth: 1.5,
             pointBackgroundColor: values.map(moodColor),
             pointBorderColor: values.map((_, i) => i === values.length - 1 ? "transparent" : "transparent"),
-            pointRadius: values.map((_, i) => i === values.length - 1 ? 4 : 7),
-            pointHoverRadius: 8,
+            pointRadius: values.map((_, i) => lifeView ? 0 : (i === values.length - 1 ? 5 : 5)),
+            pointHoverRadius: lifeView ? 0 : 7,
             tension: 0.42,
             fill: {
               target: { value: 0 },
