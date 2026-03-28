@@ -35,7 +35,7 @@ export default function Onboarding({ onDone }: OnboardingProps) {
       {screen === 0 ? (
         <div className={styles.screen1}>
           <img
-            src="/it_doesn_t_matter.png"
+            src="/scales.png"
             alt="scales"
             className={styles.image}
           />
