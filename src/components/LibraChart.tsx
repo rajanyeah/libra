@@ -136,9 +136,10 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
             ticks: {
               color: "#4a4a47",
               font: { family: "'DM Mono', monospace", size: 10 },
-              maxRotation: 30,
+              maxRotation: 45,
               autoSkip: true,
-              maxTicksLimit: lifeView ? 14 : 8,
+              maxTicksLimit: 5,
+              display: false,
             },
             border: { display: false },
           },
