@@ -16,12 +16,14 @@ import LibraChart, { moodColor } from "@/components/LibraChart";
 import { format, startOfWeek } from "date-fns";
 import type { User } from "firebase/auth";
 import styles from "./page.module.css";
+import Onboarding from "@/components/Onboarding";
 
 function fmt(v: number): string {
   return (v > 0 ? "+" : "") + v;
 }
 
 export default function Home() {
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -104,6 +106,10 @@ export default function Home() {
         </div>
       </main>
     );
+  }
+
+  if (showOnboarding) {
+    return <Onboarding onDone={() => setShowOnboarding(false)} />;
   }
 
   // sign in screen
