@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   auth,
   signInWithGoogle,
@@ -38,7 +38,6 @@ export default function Home() {
   const [logged, setLogged] = useState(false);
   const [lifeView, setLifeView] = useState(false);
 
-  // listen to auth state
   useEffect(() => {
     const unsub = subscribeToAuth(async (u) => {
       setUser(u);
@@ -51,7 +50,6 @@ export default function Home() {
     return unsub;
   }, []);
 
-  // listen to entries once logged in
   useEffect(() => {
     if (!user) return;
     const unsub = subscribeToEntries(user.uid, setEntries);
@@ -88,19 +86,49 @@ export default function Home() {
     await deleteEntry(user.uid, id);
   }, [user]);
 
-  const sorted = [...entries].sort((a, b) => a.ts - b.ts);
-  const last = sorted[sorted.length - 1];
-  const weekStart = startOfWeek(new Date()).getTime();
-  const weekEntries = entries.filter((e) => e.ts >= weekStart);
-  const avg = weekEntries.length > 0
-    ? Math.round((weekEntries.reduce((s, e) => s + e.value, 0) / weekEntries.length) * 10) / 10
-    : null;
-  const peak = weekEntries.length > 0
-    ? weekEntries.reduce((m, e) => Math.abs(e.value) > Math.abs(m.value) ? e : m, weekEntries[0])
-    : null;
-  const chartEntries = lifeView ? sorted : sorted.filter((e) => e.ts >= weekStart);
+  const sorted = useMemo(
+    () => [...entries].sort((a, b) => a.ts - b.ts),
+    [entries]
+  );
 
-  // loading
+  const last = sorted[sorted.length - 1];
+  const weekStart = useMemo(() => startOfWeek(new Date()).getTime(), []);
+  const weekEntries = useMemo(
+    () => entries.filter((e) => e.ts >= weekStart),
+    [entries, weekStart]
+  );
+
+  const avg = useMemo(() =>
+    weekEntries.length > 0
+      ? Math.round((weekEntries.reduce((s, e) => s + e.value, 0) / weekEntries.length) * 10) / 10
+      : null,
+    [weekEntries]
+  );
+
+  const peak = useMemo(() =>
+    weekEntries.length > 0
+      ? weekEntries.reduce((m, e) => Math.abs(e.value) > Math.abs(m.value) ? e : m, weekEntries[0])
+      : null,
+    [weekEntries]
+  );
+
+  const chartEntries = useMemo(
+    () => lifeView ? sorted : sorted.filter((e) => e.ts >= weekStart),
+    [lifeView, sorted, weekStart]
+  );
+
+  const chart = useMemo(() => (
+    <section className={styles.chartSection}>
+      <div className={styles.chartHeader}>
+        <span className={styles.sectionLabel}>{lifeView ? "life graph" : "this week"}</span>
+        <button className={styles.viewToggle} onClick={() => setLifeView((v) => !v)}>
+          {lifeView ? "this week" : "life graph"}
+        </button>
+      </div>
+      <LibraChart entries={chartEntries} lifeView={lifeView} allEntries={sorted} />
+    </section>
+  ), [chartEntries, lifeView, sorted]);
+
   if (authLoading) {
     return (
       <main className={styles.main}>
@@ -118,7 +146,6 @@ export default function Home() {
     }} />;
   }
 
-  // sign in screen
   if (!user) {
     return (
       <main className={styles.main}>
@@ -133,7 +160,6 @@ export default function Home() {
     );
   }
 
-  // name prompt screen
   if (!userName) {
     return (
       <main className={styles.main}>
@@ -156,7 +182,6 @@ export default function Home() {
     );
   }
 
-  // main app
   return (
     <main className={styles.main}>
       <header className={styles.header}>
@@ -189,15 +214,7 @@ export default function Home() {
         </div>
       </div>
 
-      <section className={styles.chartSection}>
-        <div className={styles.chartHeader}>
-          <span className={styles.sectionLabel}>{lifeView ? "life graph" : "this week"}</span>
-          <button className={styles.viewToggle} onClick={() => setLifeView((v) => !v)}>
-            {lifeView ? "this week" : "life graph"}
-          </button>
-        </div>
-        <LibraChart entries={chartEntries} lifeView={lifeView} allEntries={sorted} />
-      </section>
+      {chart}
 
       <section className={styles.entryPanel}>
         <div className={styles.sliderRow}>

@@ -114,8 +114,8 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
         },
         scales: {
           y: {
-            min: -11,
-            max: 11,
+            min: -10,
+            max: 10,
             grid: {
               color: (ctx) =>
                 ctx.tick.value === 0
