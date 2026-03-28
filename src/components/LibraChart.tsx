@@ -7,14 +7,13 @@ import {
   LineElement,
   PointElement,
   LinearScale,
-  CategoryScale,
   Filler,
   Tooltip,
 } from "chart.js";
 import type { Entry } from "@/lib/firebase";
 import { format } from "date-fns";
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip);
+Chart.register(LineController, LineElement, PointElement, LinearScale, Filler, Tooltip);
 
 export function moodColor(v: number): string {
   if (v >= 7) return "#1D9E75";
@@ -41,25 +40,34 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
   useEffect(() => {
     if (!canvasRef.current || !wrapperRef.current) return;
 
-    const data = lifeView
-      ? [...allEntries].sort((a, b) => a.ts - b.ts)
-      : [...entries].sort((a, b) => a.ts - b.ts);
+    const sorted = [...entries].sort((a, b) => a.ts - b.ts);
+    const values = sorted.map((e) => e.value);
 
-    const labels = data.map((e) => format(new Date(e.ts), "MMM d, h:mma"));
-    const values = data.map((e) => e.value);
+    // time-based x: use ts as x value
+    const dataPoints = sorted.map((e) => ({ x: e.ts, y: e.value }));
 
     const containerWidth = wrapperRef.current.clientWidth;
-    const scrollWidth = lifeView ? containerWidth : Math.max(containerWidth, data.length * 64);
-    canvasRef.current.style.width = scrollWidth + "px";
-    canvasRef.current.width = scrollWidth;
+
+    // in life view: fit everything; in week view: space by time proportionally
+    let canvasWidth = containerWidth;
+    if (!lifeView && sorted.length > 1) {
+      const timeSpan = sorted[sorted.length - 1].ts - sorted[0].ts;
+      const minWidth = Math.max(containerWidth, (timeSpan / (1000 * 60 * 60)) * 40);
+      canvasWidth = Math.min(minWidth, containerWidth * 4);
+    }
+
+    canvasRef.current.style.width = canvasWidth + "px";
+    canvasRef.current.width = canvasWidth;
+
+    const colors = values.map(moodColor);
 
     if (chartRef.current) {
-      chartRef.current.data.labels = labels;
-      chartRef.current.data.datasets[0].data = values;
-      chartRef.current.resize(scrollWidth, 280);
+      chartRef.current.data.datasets[0].data = dataPoints as any;
+      (chartRef.current.data.datasets[0] as any).pointBackgroundColor = colors;
+      chartRef.current.resize(canvasWidth, 280);
       chartRef.current.update("none");
       setTimeout(() => {
-        wrapperRef.current!.scrollLeft = wrapperRef.current!.scrollWidth;
+        if (wrapperRef.current) wrapperRef.current.scrollLeft = wrapperRef.current.scrollWidth;
       }, 50);
       return;
     }
@@ -67,24 +75,21 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
     chartRef.current = new Chart(canvasRef.current, {
       type: "line",
       data: {
-        labels,
-        datasets: [
-          {
-            data: values,
-            borderColor: "rgba(136,135,128,0.3)",
-            borderWidth: 1.5,
-            pointBackgroundColor: values.map(moodColor),
-            pointBorderColor: values.map((_, i) => i === values.length - 1 ? "transparent" : "transparent"),
-            pointRadius: values.map((_, i) => lifeView ? 0 : (i === values.length - 1 ? 5 : 5)),
-            pointHoverRadius: lifeView ? 0 : 7,
-            tension: 0.42,
-            fill: {
-              target: { value: 0 },
-              above: "rgba(29,158,117,0.07)",
-              below: "rgba(212,83,126,0.07)",
-            },
-          } as any,
-        ],
+        datasets: [{
+          data: dataPoints as any,
+          borderColor: "rgba(136,135,128,0.3)",
+          borderWidth: 1.5,
+          pointBackgroundColor: colors,
+          pointBorderColor: "transparent",
+          pointRadius: values.map((_, i) => lifeView ? 0 : 5),
+          pointHoverRadius: lifeView ? 0 : 7,
+          tension: 0.42,
+          fill: {
+            target: { value: 0 },
+            above: "rgba(29,158,117,0.07)",
+            below: "rgba(212,83,126,0.07)",
+          },
+        } as any],
       },
       options: {
         responsive: false,
@@ -94,12 +99,16 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title: (items) => labels[items[0].dataIndex],
+              title: (items) => {
+                const ts = (items[0].raw as any).x;
+                return format(new Date(ts), "MMM d, h:mma");
+              },
               label: (item) => {
-                const e = data[item.dataIndex];
-                const v = e.value;
+                const ts = (item.raw as any).x;
+                const e = sorted.find((e) => e.ts === ts);
+                const v = (item.raw as any).y;
                 const prefix = v > 0 ? "+" : "";
-                return e.note ? `${prefix}${v}  ·  ${e.note}` : `${prefix}${v}`;
+                return e?.note ? `${prefix}${v}  ·  ${e.note}` : `${prefix}${v}`;
               },
             },
             backgroundColor: "#1c1c19",
@@ -125,7 +134,6 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
             },
             ticks: {
               count: 5,
-              stepSize: 5,
               color: "#4a4a47",
               font: { family: "'DM Mono', monospace", size: 10 },
               callback: (v) => (Number(v) > 0 ? "+" + v : String(v)),
@@ -133,14 +141,15 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
             border: { display: false },
           },
           x: {
+            type: "linear",
             grid: { color: "rgba(136,135,128,0.04)" },
             ticks: {
               color: "#4a4a47",
               font: { family: "'DM Mono', monospace", size: 10 },
-              maxRotation: 45,
+              maxRotation: 30,
               autoSkip: true,
-              maxTicksLimit: 5,
-              display: false,
+              maxTicksLimit: 6,
+              callback: (v) => format(new Date(Number(v)), "MMM d"),
             },
             border: { display: false },
           },
@@ -149,25 +158,26 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
     });
 
     setTimeout(() => {
-      wrapperRef.current!.scrollLeft = wrapperRef.current!.scrollWidth;
+      if (wrapperRef.current) wrapperRef.current.scrollLeft = wrapperRef.current.scrollWidth;
     }, 50);
 
-    // pulse ring animation on latest dot
+    // pulse ring on latest dot
     const animate = () => {
       pulseRef.current = (pulseRef.current + 0.03) % 1;
       const chart = chartRef.current;
-      if (!chart || !canvasRef.current) return;
-
+      if (!chart || !canvasRef.current || lifeView) {
+        animRef.current = requestAnimationFrame(animate);
+        return;
+      }
       const meta = chart.getDatasetMeta(0);
       const lastPoint = meta.data[meta.data.length - 1];
       if (!lastPoint) { animRef.current = requestAnimationFrame(animate); return; }
 
       const { x, y } = lastPoint.getProps(["x", "y"], true);
-      const lastVal = (chart.data.datasets[0].data as number[])[meta.data.length - 1];
+      const lastVal = values[values.length - 1];
       const color = moodColor(lastVal);
 
       chart.draw();
-
       const ctx = chart.ctx;
       const radius = 6 + pulseRef.current * 14;
       const alpha = (1 - pulseRef.current) * 0.6;
@@ -191,9 +201,9 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [entries, allEntries, lifeView]);
+  }, [entries, lifeView]);
 
-  if (allEntries.length === 0) {
+  if (entries.length === 0) {
     return (
       <div style={{
         height: 280,
