@@ -124,6 +124,7 @@ export default function LibraChart({ entries, lifeView, allEntries }: LibraChart
               lineWidth: (ctx) => (ctx.tick.value === 0 ? 1 : 0.5),
             },
             ticks: {
+              count: 5,
               stepSize: 5,
               color: "#4a4a47",
               font: { family: "'DM Mono', monospace", size: 10 },

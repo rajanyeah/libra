@@ -23,7 +23,10 @@ function fmt(v: number): string {
 }
 
 export default function Home() {
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("libra_onboarded");
+  });
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -109,7 +112,10 @@ export default function Home() {
   }
 
   if (showOnboarding) {
-    return <Onboarding onDone={() => setShowOnboarding(false)} />;
+    return <Onboarding onDone={() => {
+      localStorage.setItem("libra_onboarded", "1");
+      setShowOnboarding(false);
+    }} />;
   }
 
   // sign in screen

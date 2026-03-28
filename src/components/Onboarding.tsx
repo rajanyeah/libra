@@ -49,8 +49,7 @@ export default function Onboarding({ onDone }: OnboardingProps) {
       ) : (
         <div className={styles.screen2}>
           <p className={styles.quote2}>
-            after every sadness you&apos;re going to get happiness that stems
-            from the things you learnt during bad times
+            "and the night is darkest before the dawn"
           </p>
           <p className={styles.tap}>tap to continue</p>
         </div>
