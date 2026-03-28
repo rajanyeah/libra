@@ -12,36 +12,7 @@
   opacity: 0;
 }
 
-.screen1 {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2.5rem;
-}
-
-.image {
-  width: 260px;
-  height: 260px;
-  object-fit: contain;
-  margin-bottom: 2rem;
-  opacity: 0.9;
-}
-
-
-.quote1 {
-  font-family: 'Instrument Serif', serif;
-  font-style: italic;
-  font-size: clamp(18px, 5vw, 28px);
-  color: #e8e6df;
-  line-height: 1.5;
-  margin-bottom: 2rem;
-  text-shadow: 0 2px 20px rgba(0,0,0,0.8);
-}
-
-.screen2 {
+.screen {
   width: 100%;
   height: 100%;
   display: flex;
@@ -50,22 +21,33 @@
   justify-content: center;
   padding: 3rem 2.5rem;
   text-align: center;
+  gap: 2rem;
+}
+
+.quote1 {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: clamp(18px, 4vw, 26px);
+  color: rgba(239, 208, 96, 0.85);
+  line-height: 1.6;
+  max-width: 420px;
 }
 
 .quote2 {
   font-family: 'Instrument Serif', serif;
   font-style: italic;
-  font-size: clamp(22px, 6vw, 38px);
+  font-size: clamp(20px, 5vw, 32px);
   color: #e8e6df;
-  line-height: 1.6;
-  margin-bottom: 3rem;
-  max-width: 600px;
+  line-height: 1.7;
+  max-width: 520px;
 }
 
 .tap {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
+  position: absolute;
+  bottom: 3rem;
 }
