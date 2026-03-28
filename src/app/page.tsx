@@ -17,6 +17,7 @@ import { format, startOfWeek } from "date-fns";
 import type { User } from "firebase/auth";
 import styles from "./page.module.css";
 import Onboarding from "@/components/Onboarding";
+import ShareCard from "@/components/ShareCard";
 
 function fmt(v: number): string {
   return (v > 0 ? "+" : "") + v;
@@ -30,6 +31,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
+  const [showShare, setShowShare] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [sliderVal, setSliderVal] = useState(0);
@@ -238,6 +240,9 @@ export default function Home() {
         <button className={styles.logBtn} onClick={handleLog} disabled={logging}>
           {logged ? "logged ✓" : logging ? "logging..." : "log it twin"}
         </button>
+        <button className={styles.shareBtn} onClick={() => setShowShare(true)}>
+          share my graph
+        </button>
       </section>
 
       <section className={styles.logSection}>
@@ -257,6 +262,17 @@ export default function Home() {
           </ul>
         )}
       </section>
+      {showShare && (
+  <ShareCard
+    onClose={() => setShowShare(false)}
+    entries={chartEntries}
+    lifeView={lifeView}
+    allEntries={sorted}
+    userName={userName}
+    avg={avg}
+    peak={peak}
+  />
+)}
     </main>
   );
 }
