@@ -39,13 +39,11 @@ export default function Onboarding({ onDone }: OnboardingProps) {
             alt="scales"
             className={styles.image}
           />
-          <div className={styles.overlay}>
             <p className={styles.quote1}>
               the universe exists in a state of equilibrium
             </p>
             <p className={styles.tap}>tap to continue</p>
           </div>
-        </div>
       ) : (
         <div className={styles.screen2}>
           <p className={styles.quote2}>
